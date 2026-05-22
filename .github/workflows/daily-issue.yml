@@ -1,0 +1,38 @@
+name: Daily A-Share Issue
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # UTC midnight = 北京时间 8AM
+  workflow_dispatch:       # 也支持手动触发
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create today's issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          TITLE="[${TODAY}] A-Share Daily Notes"
+          
+          # 检查是否已存在
+          EXISTS=$(gh issue list --repo ${{ github.repository }} --search "${TODAY}" --json number --jq 'length')
+          
+          if [ "$EXISTS" -eq "0" ]; then
+            gh issue create \
+              --repo ${{ github.repository }} \
+              --title "$TITLE" \
+              --label "daily" \
+              --body "> 如果今天恰好做了A股复盘，把笔记贴下面就好。格式不限，几句话够用。
+              > If you happen to have today's A-share recap, drop your notes below.
+              
+              ---
+              
+              <!-- paste your analysis below -->"
+            echo "Created: $TITLE"
+          else
+            echo "Already exists: $TITLE"
+          fi
